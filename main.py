@@ -3,6 +3,9 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from pymongo.mongo_client import MongoClient
 from dotenv import load_dotenv
+from langchain_community.llms import OpenAI
+from langchain.chains import LLMChain
+from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
 
@@ -11,6 +14,9 @@ SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 MONGO_USERNAME = os.environ.get("MONGO_USERNAME")
 MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
+
+# Initialize OpenAI API
+llm = OpenAI(temperature=0.7)
 
 if not SLACK_BOT_TOKEN or not SLACK_APP_TOKEN:
     raise ValueError("Slack tokens must be set in environment variables.")
@@ -23,6 +29,18 @@ collection = db["posts"]
 
 # Initialize your app with your bot token
 app = App(token=SLACK_BOT_TOKEN)
+
+summarization_prompt = PromptTemplate(
+    input_variables=["text"],
+    template="Please summarize the following text and output in CH-TW:\n\n{text}\n\nSummary:"
+)
+summarization_chain = LLMChain(
+    llm=llm,
+    prompt=summarization_prompt
+)
+def summarize_text(text):
+    summary = summarization_chain.run(text=text)
+    return summary
 
 # Define a function that sends a message to a channel upon connection
 def send_welcome_message():
@@ -52,6 +70,8 @@ def process_mongo_changes():
                     content = f"{full_document['content']}"
                     author = f"{full_document['author']}"
                     href = f"{full_document['href']}"
+                    input_text = content
+                    summary = summarize_text(input_text)
                     blocks=[
                         {
                             "type": "header",
@@ -67,7 +87,7 @@ def process_mongo_changes():
                             "type": "section",
                             "text": {
                                 "type": "mrkdwn",
-                                "text": '*貼文摘要*'+'\n'+"摘要完的貼文"
+                                "text": '*貼文摘要*'+'\n'+summary
                             }
                         },
                         {
@@ -87,17 +107,7 @@ def process_mongo_changes():
                             "type": "section",
                             "text": {
                                 "type": "mrkdwn",
-                                "text":"原始貼文："
-                            },
-                            "accessory":{
-                                "type":"button",
-                                "text":{
-                                    "type":"plain_text",
-                                    "text":"前往"
-                                },
-                                "value":"open_post_value", 
-                                "url": href, 
-                                "action_id":"open_post"
+                                "text": f"原始貼文連結：{href}"
                             }
                         }
                     ]
@@ -111,7 +121,7 @@ def process_mongo_changes():
                 try:
                     app.client.chat_postMessage(
                         channel="#36-資訊-hackathon-test",  # Change to your desired channel
-                        text="NTU is BOILING--!",
+                        text="ALERT! NTU is BOILING",
                         blocks=blocks
                     )
                 except Exception as e:
