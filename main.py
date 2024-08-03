@@ -23,7 +23,7 @@ collection = db["posts"]
 
 # Initialize your app with your bot token
 app = App(token=SLACK_BOT_TOKEN)
-print('lol')
+
 # Define a function that sends a message to a channel upon connection
 def send_welcome_message():
     try:
