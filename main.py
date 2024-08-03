@@ -74,10 +74,13 @@ def process_mongo_changes():
                     summary = summarize_text(input_text)
                     blocks=[
                         {
+                            "type":"divider"
+                        },
+                        {
                             "type": "header",
                             "text": {
                                 "type": "plain_text",
-                                "text": "最新貼文"
+                                "text": ":bookmark_tabs: 最新貼文"
                             }
                         },
                         {
@@ -87,11 +90,8 @@ def process_mongo_changes():
                             "type": "section",
                             "text": {
                                 "type": "mrkdwn",
-                                "text": '*貼文摘要*'+'\n'+summary
+                                "text": '*貼文摘要*'+'\n'+summary+'\n'
                             }
-                        },
-                        {
-                            "type":"divider"
                         },
                         {
                             "type": "section",
@@ -121,7 +121,7 @@ def process_mongo_changes():
                 try:
                     app.client.chat_postMessage(
                         channel="#36-資訊-hackathon-test",  # Change to your desired channel
-                        text="ALERT! NTU is BOILING",
+                        text="Alert! NTU is BOILING",
                         blocks=blocks
                     )
                 except Exception as e:
